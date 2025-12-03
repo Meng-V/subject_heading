@@ -1,176 +1,211 @@
 ## AI Subject Heading Assistant - Multi-Image & 65X Support
 
-**Enhanced backend with multi-image OCR, page classification, topic types, multi-vocabulary authority search, and full MARC 65X family support.**
+AI-powered subject heading generation for library cataloging, using OpenAI o4-mini with the Responses API.
 
-## 🆕 What's New
+## Features
 
-### Multi-Image Input
-- Upload **multiple page images** (front cover, back cover, inner flaps, TOC pages, preface pages)
-- **Automatic page classification** (front_cover, back_cover, flap, toc, preface, other)
-- **Aggregated metadata extraction** from all pages
+- **Multi-Image OCR**: Upload multiple book pages (cover, back, TOC, preface, flaps)
+- **Page Classification**: Automatic detection of page types
+- **Topic Generation**: AI-generated topics with type classification (topical/geographic/genre)
+- **Authority Matching**: Vector search against LCSH and FAST vocabularies
+- **MARC 65X Generation**: Full 650/651/655 field generation with proper indicators
 
-### Topic Type Classification
-- Topics classified as:
-  - **topical** - subject matter, themes, concepts
-  - **geographic** - places, regions, countries  
-  - **genre** - form/genre terms
+## Technology Stack
 
-### Multi-Vocabulary Support
-- Search across multiple authority vocabularies:
-  - **LCSH** (Library of Congress Subject Headings)
-  - **FAST** (Faceted Application of Subject Terminology)
-  - **GTT**, **RERO**, **SWD**, **idszbz**, **ram**, and more
-- Unified vector search across all vocabularies
+| Component | Technology |
+|-----------|------------|
+| **AI Model** | OpenAI o4-mini (Responses API) |
+| **Quality Control** | `reasoning_effort="high"` |
+| **Embeddings** | text-embedding-3-large |
+| **Vector DB** | Weaviate (local Docker) |
+| **Backend** | FastAPI + Python 3.11+ |
+| **Vocabularies** | LCSH, FAST (MVP scope) |
 
-### Full 65X MARC Family
-- Generate **650** (Topical Terms)
-- Generate **651** (Geographic Names)
-- Generate **655** (Genre/Form Terms)
-- Automatic tag selection based on topic type
-- Proper indicators and $2 subfields for each vocabulary
+## Quick Start
 
-### Vocabulary-Aware MARC Generation
-```
-LCSH:      650 _0 $a Calligraphy, Chinese $y Ming-Qing dynasties, 1368-1912 $0 http://id.loc.gov/...
-FAST:      650 _7 $a Calligraphy, Chinese $2 fast $0 (OCoLC)fst00844437
-Geographic: 651 _0 $a China $x Civilization
-Genre:     655 _7 $a Conference papers $2 fast
-```
+### 1. Prerequisites
 
-## 📦 New Modules
+- Python 3.11+
+- Docker Desktop
+- OpenAI API key
 
-### Core Files
-
-- **`ocr_multi.py`** - Multi-image OCR with page classification
-- **`authority_search.py`** - Multi-vocabulary vector search (replaces `lcsh_index.py`)
-- **`marc_65x_builder.py`** - Full 65X family builder (650/651/655)
-- **`routes_v2.py`** - Enhanced API endpoints
-- **`main_v2.py`** - V2 FastAPI app with both v1 and v2 routes
-- **`test_workflow_v2.py`** - V2 workflow testing
-
-### Updated Existing Files
-
-- **`models.py`** - Added PageImage, AuthorityCandidate, MARCField65X, topic types
-- **`llm_topics.py`** - Added topic type classification
-
-## 🚀 Quick Start
-
-### 1. Start the Server
+### 2. Clone and Setup
 
 ```bash
-cd backend
-python main_v2.py
+cd subject_heading
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-Server runs on http://localhost:8000
-
-### 2. Initialize Data
+### 3. Configure Environment
 
 ```bash
-python test_workflow_v2.py init
+# Copy example config
+cp .env.example .env
+
+# Edit .env and add your OpenAI API key
+nano .env  # or use your preferred editor
 ```
 
-This initializes:
-- Multi-vocabulary Weaviate schemas (LCSHSubject, FASTSubject, etc.)
-- Sample LCSH and FAST authority data
+Your `.env` should contain:
+```bash
+OPENAI_API_KEY=sk-your-actual-api-key-here
+WEAVIATE_URL=http://localhost:8080
+REASONING_EFFORT=high
+```
 
-### 3. Run Test Workflow
+### 4. Start Weaviate
 
 ```bash
-python test_workflow_v2.py
+docker-compose up -d
 ```
 
-## 📚 V2 API Endpoints
+### 5. Run the Server
 
-### Core Workflow
+```bash
+python main.py
+```
+
+Or with uvicorn directly:
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 6. Initialize Database
+
+Open a new terminal and run:
+```bash
+# Initialize authority schemas
+curl -X POST http://localhost:8000/api/initialize-authorities
+
+# Load sample data (optional)
+curl -X POST http://localhost:8000/api/index-sample-authorities
+```
+
+### 7. Access the API
+
+- **API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/api/health
+
+## API Workflow
+
+```
+Upload Images -> Generate Topics -> Match Authority -> Build 65X -> Submit Final
+```
+
+## API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/v2/api/ingest-images` | POST | Multi-image OCR with page hints |
-| `/v2/api/generate-topics` | POST | Generate typed topics |
-| `/v2/api/authority-match-typed` | POST | Multi-vocabulary authority search |
-| `/v2/api/build-65x` | POST | Build 65X MARC fields |
-| `/v2/api/submit-final` | POST | Save final record |
+| `/api/ingest-images` | POST | Upload book images for OCR |
+| `/api/generate-topics` | POST | Generate typed topic candidates |
+| `/api/authority-match` | POST | Search LCSH/FAST authorities |
+| `/api/build-65x` | POST | Generate Subject65X objects |
+| `/api/submit-final` | POST | Save final record |
+| `/api/health` | GET | Health check |
+| `/api/authority-stats` | GET | Index statistics |
+| `/api/initialize-authorities` | POST | Initialize Weaviate schemas |
+| `/api/index-sample-authorities` | POST | Load sample data |
 
-### Admin
+## Subject65X Model
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v2/api/initialize-authorities` | POST | Initialize schemas |
-| `/v2/api/index-sample-authorities` | POST | Load sample data |
-| `/v2/api/authority-stats` | GET | Get index statistics |
+The primary output format for subject headings:
 
-### Legacy V1 Endpoints
-
-All original V1 endpoints still available at `/api/*` for backward compatibility.
-
-## 🔧 V2 Workflow Example
-
-### 1. Upload Multiple Images
-
-```bash
-curl -X POST http://localhost:8000/v2/api/ingest-images \
-  -F "images=@cover.jpg" \
-  -F "images=@back.jpg" \
-  -F "images=@toc_page1.jpg" \
-  -F "images=@toc_page2.jpg" \
-  -F "images=@preface.jpg" \
-  -F "images=@flap.jpg" \
-  -F 'page_hints=["front_cover","back_cover","toc","toc","preface","flap"]'
-```
-
-Response includes classified pages:
 ```json
 {
-  "success": true,
-  "metadata": {
-    "title": "...",
-    "summary": "...",
-    "table_of_contents": [...],
-    "preface_snippets": [...],
-    "raw_pages": [
-      {"page_type": "front_cover", "text": "..."},
-      {"page_type": "back_cover", "text": "..."},
-      ...
-    ]
-  }
+  "tag": "650",
+  "ind1": "_",
+  "ind2": "0",
+  "vocabulary": "lcsh",
+  "heading_string": "Calligraphy, Chinese -- Ming-Qing dynasties, 1368-1912",
+  "subfields": [
+    {"code": "a", "value": "Calligraphy, Chinese"},
+    {"code": "y", "value": "Ming-Qing dynasties, 1368-1912"}
+  ],
+  "uri": "http://id.loc.gov/authorities/subjects/sh85018910",
+  "authority_id": "sh85018910",
+  "source_system": "ai_generated",
+  "score": 0.92,
+  "explanation": "Primary subject covering Chinese calligraphy.",
+  "status": "suggested"
 }
 ```
 
-### 2. Generate Typed Topics
+## MARC Examples
+
+### LCSH (ind2=0)
+```
+650 _0 $a Calligraphy, Chinese $y Ming-Qing dynasties, 1368-1912.
+651 _0 $a China $x Civilization.
+655 _0 $a Conference papers and proceedings.
+```
+
+### FAST (ind2=7, $2 fast)
+```
+650 _7 $a Calligraphy, Chinese $2 fast $0 (OCoLC)fst00844437
+651 _7 $a China $2 fast $0 (OCoLC)fst01206073
+```
+
+## Project Structure
+
+```
+subject_heading/
+├── main.py              # FastAPI application
+├── routes.py            # API endpoints
+├── config.py            # Configuration settings
+├── models.py            # Pydantic models
+├── ocr_multi.py         # Multi-image OCR processor
+├── llm_topics.py        # Topic generation
+├── authority_search.py  # LCSH/FAST vector search
+├── marc_65x_builder.py  # MARC 65X field builder
+├── docker-compose.yml   # Weaviate service
+├── requirements.txt     # Python dependencies
+├── .env.example         # Environment template
+└── scripts/
+    └── lcsh_importer.py # LCSH data importer
+```
+
+## Configuration
+
+All settings in `.env`:
 
 ```bash
-curl -X POST http://localhost:8000/v2/api/generate-topics \
-  -H "Content-Type: application/json" \
-  -d '{
-    "metadata": {...}
-  }'
+# OpenAI
+OPENAI_API_KEY=sk-...
+
+# Models (all use o4-mini)
+DEFAULT_MODEL=o4-mini
+OCR_MODEL=o4-mini
+TOPIC_MODEL=o4-mini
+EXPLANATION_MODEL=o4-mini
+EMBEDDING_MODEL=text-embedding-3-large
+
+# Responses API quality (low/medium/high)
+REASONING_EFFORT=high
+
+# Weaviate
+WEAVIATE_URL=http://localhost:8080
+
+# Storage
+DATA_DIR=./data/records
+MAX_TOPICS=10
 ```
 
-Response includes topic types:
-```json
-{
-  "topics": [
-    {"topic": "Chinese calligraphy techniques", "type": "topical"},
-    {"topic": "China", "type": "geographic"},
-    {"topic": "Handbooks and manuals", "type": "genre"}
-  ]
-}
-```
+## Vocabulary Scope (MVP)
 
-### 3. Multi-Vocabulary Authority Search
+| Vocabulary | ind2 | $2 | Active |
+|------------|------|-----|--------|
+| **LCSH** | 0 | - | Yes |
+| **FAST** | 7 | fast | Yes |
+| GTT | 7 | gtt | Future |
+| RERO | 7 | rero | Future |
 
-```bash
-curl -X POST http://localhost:8000/v2/api/authority-match-typed \
-  -H "Content-Type: application/json" \
-  -d '{
-    "topics": [
-      {"topic": "Chinese calligraphy", "type": "topical"},
-      {"topic": "China", "type": "geographic"}
-    ],
-    "vocabularies": ["lcsh", "fast", "gtt"]
-  }'
-```
+## License
 
 Response includes matches from all vocabularies:
 ```json

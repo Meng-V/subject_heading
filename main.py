@@ -1,35 +1,38 @@
-"""Main FastAPI application for AI Subject Heading Assistant."""
+"""AI Subject Heading Assistant - FastAPI Application.
+
+Uses OpenAI o4-mini with Responses API for all LLM tasks.
+Supports multi-image OCR, LCSH/FAST authority search, and MARC 65X generation.
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from routes import router
-from lcsh_index import lcsh_search
+from authority_search import authority_search
 from config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifespan context manager for startup and shutdown events.
-    """
-    # Startup: Connect to Weaviate
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup
     print("🚀 Starting AI Subject Heading Assistant...")
     print(f"📁 Data directory: {settings.data_dir}")
     print(f"🔗 Weaviate URL: {settings.weaviate_url}")
+    print(f"🤖 Model: {settings.default_model} (reasoning_effort={settings.reasoning_effort})")
     
     try:
-        lcsh_search.connect()
-        print("✅ Connected to Weaviate")
+        authority_search.connect()
+        print("✅ Connected to Weaviate (LCSH + FAST)")
     except Exception as e:
         print(f"⚠️  Warning: Could not connect to Weaviate: {str(e)}")
         print("   Make sure Weaviate is running: docker-compose up -d")
     
     yield
     
-    # Shutdown: Disconnect from Weaviate
+    # Shutdown
     print("👋 Shutting down...")
-    lcsh_search.disconnect()
+    authority_search.disconnect()
     print("✅ Disconnected from Weaviate")
 
 
@@ -37,44 +40,41 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="AI Subject Heading Assistant",
     description="""
-    AI-powered subject heading assistant for library cataloging.
-    
-    ## Features
-    
-    * **OCR**: Extract metadata from book images using OpenAI Vision
-    * **Topic Generation**: Generate semantic topics using LLM
-    * **LCSH Matching**: Find Library of Congress Subject Headings via vector search
-    * **MARC Generation**: Build MARC 650 fields automatically
-    * **Data Storage**: Store librarian selections for continual improvement
-    
-    ## Workflow
-    
-    1. Upload images (cover, back, TOC) → `/api/ingest-images`
-    2. Generate topics → `/api/generate-topics`
-    3. Match LCSH headings → `/api/lcsh-match`
-    4. Build MARC 650 fields → `/api/marc650`
-    5. Submit final selection → `/api/submit-final`
-    
-    ## Admin Endpoints
-    
-    * Initialize LCSH schema → `/api/initialize-lcsh`
-    * Index sample data → `/api/index-lcsh-sample`
-    * Check stats → `/api/lcsh-stats`
+AI-powered subject heading assistant for library cataloging.
+
+## 🤖 Technology
+- **Model**: OpenAI o4-mini with Responses API
+- **Quality**: reasoning_effort="high" for best results
+- **Vocabularies**: LCSH and FAST (MVP scope)
+
+## 📚 Workflow
+
+1. **Upload images** → `/api/ingest-images`
+2. **Generate topics** → `/api/generate-topics`
+3. **Match authorities** → `/api/authority-match`
+4. **Build 65X fields** → `/api/build-65x`
+5. **Submit final** → `/api/submit-final`
+
+## 🔧 Admin Endpoints
+
+- Initialize schemas → `/api/initialize-authorities`
+- Index sample data → `/api/index-sample-authorities`
+- Check stats → `/api/authority-stats`
     """,
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify allowed origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include API routes
+# Include routes
 app.include_router(router)
 
 
@@ -82,8 +82,11 @@ app.include_router(router)
 async def root():
     """Root endpoint with API information."""
     return {
-        "message": "AI Subject Heading Assistant API",
-        "version": "1.0.0",
+        "message": "AI Subject Heading Assistant",
+        "version": "2.0.0",
+        "model": settings.default_model,
+        "reasoning_effort": settings.reasoning_effort,
+        "vocabularies": ["lcsh", "fast"],
         "docs": "/docs",
         "health": "/api/health"
     }
