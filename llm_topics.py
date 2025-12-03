@@ -1,6 +1,6 @@
-"""LLM-based topic generation module using OpenAI Responses API with o4-mini.
+"""LLM-based topic generation module using OpenAI Chat Completions API.
 
-Uses reasoning_effort="high" for better quality topic generation.
+Uses gpt-4o-mini with low temperature for consistent topic generation.
 """
 import json
 from typing import List
@@ -11,13 +11,12 @@ from models import BookMetadata, TopicCandidate
 
 
 class TopicGenerator:
-    """Generates semantic topic candidates using o4-mini with Responses API."""
+    """Generates semantic topic candidates using gpt-4o-mini."""
     
     def __init__(self):
         """Initialize topic generator with OpenAI client."""
         self.client = OpenAI(api_key=settings.openai_api_key)
         self.model = settings.topic_model
-        self.reasoning_effort = settings.reasoning_effort
         self.max_topics = settings.max_topics
     
     def _format_metadata_for_prompt(self, metadata: BookMetadata) -> str:
@@ -34,8 +33,8 @@ class TopicGenerator:
             parts.append(f"Publication Year: {metadata.pub_year}")
         if metadata.summary:
             parts.append(f"\nSummary:\n{metadata.summary}")
-        if metadata.toc:
-            toc_text = "\n".join([f"- {item}" for item in metadata.toc])
+        if metadata.table_of_contents:
+            toc_text = "\n".join([f"- {item}" for item in metadata.table_of_contents])
             parts.append(f"\nTable of Contents:\n{toc_text}")
         
         return "\n".join(parts)
@@ -80,17 +79,16 @@ Return your response as a JSON array in this exact format:
 Return ONLY the JSON array, no additional text."""
 
         try:
-            # Call OpenAI Responses API with o4-mini
-            # Uses reasoning_effort instead of temperature for quality control
-            response = self.client.responses.create(
+            # Use Chat Completions API (gpt-4o-mini doesn't support reasoning parameter)
+            response = self.client.chat.completions.create(
                 model=self.model,
-                input=prompt,
-                reasoning={"effort": self.reasoning_effort},
-                max_output_tokens=2000
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,  # Low temperature for consistent output
+                max_tokens=2000
             )
             
-            # Parse response from Responses API
-            content = response.output_text.strip()
+            # Parse response from Chat Completions API
+            content = response.choices[0].message.content.strip()
             
             # Extract JSON from response (handle markdown code blocks)
             if "```json" in content:
@@ -137,15 +135,15 @@ Topic: {topic}
 Return only the refined topic, no explanation."""
 
         try:
-            # Use Responses API with o4-mini
-            response = self.client.responses.create(
+            # Use Chat Completions API
+            response = self.client.chat.completions.create(
                 model=self.model,
-                input=prompt,
-                reasoning={"effort": self.reasoning_effort},
-                max_output_tokens=500
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                max_tokens=500
             )
             
-            return response.output_text.strip()
+            return response.choices[0].message.content.strip()
             
         except Exception as e:
             # If refinement fails, return original

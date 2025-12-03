@@ -1,6 +1,6 @@
 ## AI Subject Heading Assistant - Multi-Image & 65X Support
 
-AI-powered subject heading generation for library cataloging, using OpenAI o4-mini with the Responses API.
+AI-powered subject heading generation for library cataloging, using OpenAI gpt-4o-mini.
 
 ## Features
 
@@ -14,8 +14,8 @@ AI-powered subject heading generation for library cataloging, using OpenAI o4-mi
 
 | Component | Technology |
 |-----------|------------|
-| **AI Model** | OpenAI o4-mini (Responses API) |
-| **Quality Control** | `reasoning_effort="high"` |
+| **AI Model** | gpt-4o-mini (Chat Completions API) |
+| **Quality Control** | `temperature=0.1` for consistency |
 | **Embeddings** | text-embedding-3-large |
 | **Vector DB** | Weaviate (local Docker) |
 | **Backend** | FastAPI + Python 3.11+ |
@@ -178,15 +178,12 @@ All settings in `.env`:
 # OpenAI
 OPENAI_API_KEY=sk-...
 
-# Models (all use o4-mini)
-DEFAULT_MODEL=o4-mini
-OCR_MODEL=o4-mini
-TOPIC_MODEL=o4-mini
-EXPLANATION_MODEL=o4-mini
+# Models (all use gpt-4o-mini)
+DEFAULT_MODEL=gpt-4o-mini
+OCR_MODEL=gpt-4o-mini
+TOPIC_MODEL=gpt-4o-mini
+EXPLANATION_MODEL=gpt-4o-mini
 EMBEDDING_MODEL=text-embedding-3-large
-
-# Responses API quality (low/medium/high)
-REASONING_EFFORT=high
 
 # Weaviate
 WEAVIATE_URL=http://localhost:8080

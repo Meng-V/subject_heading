@@ -1,6 +1,6 @@
 """OCR module with multi-image support and page classification.
 
-Uses OpenAI Responses API with o4-mini model and reasoning_effort="high".
+Uses OpenAI Chat Completions API with gpt-4o-mini and vision support.
 """
 import base64
 import json
@@ -12,13 +12,12 @@ from models import BookMetadata, PageImage
 
 
 class MultiImageOCRProcessor:
-    """Handles OCR processing for multiple book images using Responses API with o4-mini."""
+    """Handles OCR processing for multiple book images using gpt-4o-mini with vision."""
     
     def __init__(self):
         """Initialize OCR processor with OpenAI client."""
         self.client = OpenAI(api_key=settings.openai_api_key)
         self.model = settings.ocr_model
-        self.reasoning_effort = settings.reasoning_effort
         
     def _encode_image(self, image_bytes: bytes) -> str:
         """Encode image bytes to base64 string."""
@@ -56,24 +55,29 @@ Return ONLY valid JSON in this format:
             prompt += f"\n\nClient hint: This page might be '{page_hint}'"
         
         try:
-            # Use Responses API with o4-mini
-            response = self.client.responses.create(
+            # Use Chat Completions API with vision
+            response = self.client.chat.completions.create(
                 model=self.model,
-                input=[
-                    {"type": "text", "text": prompt},
+                messages=[
                     {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_base64}",
-                            "detail": "high"
-                        }
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{image_base64}",
+                                    "detail": "high"
+                                }
+                            }
+                        ]
                     }
                 ],
-                reasoning={"effort": self.reasoning_effort},
-                max_output_tokens=2000
+                temperature=0.1,
+                max_tokens=2000
             )
             
-            content = response.output_text
+            content = response.choices[0].message.content
             
             # Extract JSON
             if "```json" in content:
@@ -154,15 +158,15 @@ Extract and return ONLY valid JSON in this format:
 If any field is not found, use empty string "" for text fields or empty array [] for lists."""
 
         try:
-            # Use Responses API with o4-mini
-            response = self.client.responses.create(
+            # Use Chat Completions API
+            response = self.client.chat.completions.create(
                 model=self.model,
-                input=aggregation_prompt,
-                reasoning={"effort": self.reasoning_effort},
-                max_output_tokens=3000
+                messages=[{"role": "user", "content": aggregation_prompt}],
+                temperature=0.1,
+                max_tokens=3000
             )
             
-            content = response.output_text
+            content = response.choices[0].message.content
             
             # Extract JSON
             if "```json" in content:

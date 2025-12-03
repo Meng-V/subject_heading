@@ -36,9 +36,15 @@ class AuthorityVectorSearch:
     def connect(self):
         """Connect to Weaviate instance."""
         try:
+            # Parse URL to extract host and port
+            from urllib.parse import urlparse
+            parsed = urlparse(self.weaviate_url)
+            host = parsed.hostname or "localhost"
+            port = parsed.port or 8080
+            
             self.client = weaviate.connect_to_local(
-                host=self.weaviate_url.replace("http://", "").replace(":8080", ""),
-                port=8080
+                host=host,
+                port=port
             )
             return True
         except Exception as e:
@@ -74,6 +80,7 @@ class AuthorityVectorSearch:
                 
                 self.client.collections.create(
                     name=collection_name,
+                    # No vectorizer - we provide vectors manually
                     vectorizer_config=weaviate.classes.config.Configure.Vectorizer.none(),
                     properties=[
                         weaviate.classes.config.Property(
@@ -334,13 +341,14 @@ class AuthorityVectorSearch:
         return results
     
     def get_stats(self) -> Dict:
-        """Get statistics about all authority indexes."""
+        """Get statistics about MVP authority indexes (LCSH + FAST only)."""
         if not self.client:
             self.connect()
         
         stats = {}
         
-        for vocab in ["lcsh", "fast", "gtt", "rero", "swd"]:
+        # Only query MVP vocabularies
+        for vocab in self.MVP_VOCABULARIES:
             try:
                 collection_name = self._get_collection_for_vocab(vocab)
                 collection = self.client.collections.get(collection_name)

@@ -1,11 +1,10 @@
 """Configuration management for the application.
 
-Note: Uses OpenAI Responses API with o4-mini model.
-The Responses API uses reasoning={"effort": "high"} instead of temperature.
+Uses OpenAI Chat Completions API with gpt-4o-mini model.
+Temperature is set to 0.1 for consistent, deterministic outputs.
 """
 import os
 from pathlib import Path
-from typing import Literal
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
@@ -19,16 +18,12 @@ class Settings(BaseSettings):
     # OpenAI Configuration
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     
-    # Model Configuration - ALL use o4-mini with Responses API
-    default_model: str = os.getenv("DEFAULT_MODEL", "o4-mini")
-    ocr_model: str = os.getenv("OCR_MODEL", "o4-mini")
-    topic_model: str = os.getenv("TOPIC_MODEL", "o4-mini")
-    explanation_model: str = os.getenv("EXPLANATION_MODEL", "o4-mini")
+    # Model Configuration - Using gpt-4o-mini with Chat Completions API
+    default_model: str = os.getenv("DEFAULT_MODEL", "gpt-4o-mini")
+    ocr_model: str = os.getenv("OCR_MODEL", "gpt-4o-mini")
+    topic_model: str = os.getenv("TOPIC_MODEL", "gpt-4o-mini")
+    explanation_model: str = os.getenv("EXPLANATION_MODEL", "gpt-4o-mini")
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-large")
-    
-    # Reasoning effort for Responses API (low, medium, high)
-    # Note: Responses API doesn't support temperature, use reasoning_effort instead
-    reasoning_effort: Literal["low", "medium", "high"] = os.getenv("REASONING_EFFORT", "high")
     
     # Weaviate Configuration
     weaviate_url: str = os.getenv("WEAVIATE_URL", "http://localhost:8080")
