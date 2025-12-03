@@ -1,6 +1,6 @@
-"""LLM-based topic generation module using OpenAI Chat Completions API.
+"""LLM-based topic generation module using OpenAI Responses API.
 
-Uses gpt-4o-mini with low temperature for consistent topic generation.
+Uses o4-mini with reasoning_effort='high' for better topic generation.
 """
 import json
 from typing import List
@@ -11,12 +11,13 @@ from models import BookMetadata, TopicCandidate
 
 
 class TopicGenerator:
-    """Generates semantic topic candidates using gpt-4o-mini."""
+    """Generates semantic topic candidates using o4-mini with Responses API."""
     
     def __init__(self):
         """Initialize topic generator with OpenAI client."""
         self.client = OpenAI(api_key=settings.openai_api_key)
         self.model = settings.topic_model
+        self.reasoning_effort = settings.reasoning_effort
         self.max_topics = settings.max_topics
     
     def _format_metadata_for_prompt(self, metadata: BookMetadata) -> str:
@@ -79,25 +80,52 @@ Return your response as a JSON array in this exact format:
 Return ONLY the JSON array, no additional text."""
 
         try:
-            # Use Chat Completions API (gpt-4o-mini doesn't support reasoning parameter)
-            response = self.client.chat.completions.create(
+            # Use Responses API with o4-mini
+            response = self.client.responses.create(
                 model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,  # Low temperature for consistent output
-                max_tokens=2000
+                input=[
+                    {
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }
+                ],
+                reasoning={"effort": self.reasoning_effort},
+                max_output_tokens=2000
             )
             
-            # Parse response from Chat Completions API
-            content = response.choices[0].message.content.strip()
+            # Parse response from Responses API - try structured output first
+            if hasattr(response, 'output') and response.output and len(response.output) > 0:
+                if hasattr(response.output[0], 'content') and response.output[0].content:
+                    content_block = response.output[0].content[0]
+                    
+                    if hasattr(content_block, 'type'):
+                        if content_block.type == "output_text":
+                            text = content_block.text.strip()
+                        elif content_block.type == "output_json":
+                            topics_data = content_block.json
+                            # Skip JSON parsing, already parsed
+                            if not isinstance(topics_data, list):
+                                raise ValueError("Expected JSON array of topics")
+                            topics = [TopicCandidate(**item) for item in topics_data]
+                            topics = topics[:self.max_topics]
+                            return topics
+                        else:
+                            text = str(content_block)
+                    else:
+                        text = str(content_block)
+                else:
+                    text = response.output_text if hasattr(response, 'output_text') else ""
+            else:
+                text = response.output_text if hasattr(response, 'output_text') else ""
             
-            # Extract JSON from response (handle markdown code blocks)
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
+            # Fallback: Parse as text with JSON extraction
+            text = text.strip()
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
             
-            # Parse JSON
-            topics_data = json.loads(content)
+            topics_data = json.loads(text)
             
             # Validate and create TopicCandidate objects
             if not isinstance(topics_data, list):
@@ -111,7 +139,10 @@ Return ONLY the JSON array, no additional text."""
             return topics
             
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse LLM response as JSON: {str(e)}\nContent: {content}")
+            raise ValueError(
+                f"Failed to parse LLM response as JSON: {str(e)}; "
+                f"raw_response={response.model_dump_json()[:1000]}"
+            )
         except Exception as e:
             raise Exception(f"Topic generation failed: {str(e)}")
     
@@ -135,15 +166,28 @@ Topic: {topic}
 Return only the refined topic, no explanation."""
 
         try:
-            # Use Chat Completions API
-            response = self.client.chat.completions.create(
+            # Use Responses API with o4-mini
+            response = self.client.responses.create(
                 model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                max_tokens=500
+                input=[
+                    {
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }
+                ],
+                reasoning={"effort": self.reasoning_effort},
+                max_output_tokens=500
             )
             
-            return response.choices[0].message.content.strip()
+            # Parse response
+            if response.output and response.output[0].content:
+                content_block = response.output[0].content[0]
+                if content_block.type == "output_text":
+                    return content_block.text.strip()
+                elif hasattr(content_block, 'text'):
+                    return content_block.text.strip()
+            
+            return response.output_text.strip() if hasattr(response, 'output_text') else ""
             
         except Exception as e:
             # If refinement fails, return original

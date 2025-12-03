@@ -5,7 +5,7 @@ MVP Scope:
 - LCSH: 650/651/655 with ind2=0
 - FAST: 650/651/655 with ind2=7 and $2 fast
 
-Uses OpenAI Chat Completions API with gpt-4o-mini.
+Uses OpenAI o4-mini with Responses API.
 """
 import re
 import json
@@ -23,7 +23,7 @@ from models import (
 
 
 class MARC65XBuilder:
-    """Builds Subject65X objects (650/651/655) using gpt-4o-mini."""
+    """Builds Subject65X objects (650/651/655) using o4-mini with Responses API."""
     
     # MVP: LCSH and FAST vocabulary mapping
     VOCAB_TO_MARC = {
@@ -41,9 +41,10 @@ class MARC65XBuilder:
     }
     
     def __init__(self):
-        """Initialize MARC builder with gpt-4o-mini."""
+        """Initialize MARC builder with o4-mini."""
         self.client = OpenAI(api_key=settings.openai_api_key)
         self.model = settings.explanation_model
+        self.reasoning_effort = settings.reasoning_effort
     
     def _determine_tag(
         self,
@@ -215,14 +216,19 @@ MARC Field: {subject.to_marc_string()}
 Provide a brief, cataloger-friendly explanation (1-2 sentences max)."""
 
         try:
-            # Use Chat Completions API
-            response = self.client.chat.completions.create(
+            # Use Responses API with o4-mini
+            response = self.client.responses.create(
                 model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                max_tokens=150
+                input=[
+                    {
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }
+                ],
+                reasoning={"effort": self.reasoning_effort},
+                max_output_tokens=150
             )
-            return response.choices[0].message.content.strip()
+            return response.output_text.strip()
         except:
             # Fallback explanation
             return f"Selected based on semantic match to '{topic}' with confidence {authority.score:.2f}"
