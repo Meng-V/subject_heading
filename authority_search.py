@@ -100,6 +100,36 @@ class AuthorityVectorSearch:
                             description="Vocabulary code"
                         ),
                         weaviate.classes.config.Property(
+                            name="subject_type",
+                            data_type=weaviate.classes.config.DataType.TEXT,
+                            skip_vectorization=True,
+                            description="Subject type: topical, geographic, or genre_form"
+                        ),
+                        weaviate.classes.config.Property(
+                            name="alt_labels",
+                            data_type=weaviate.classes.config.DataType.TEXT_ARRAY,
+                            skip_vectorization=False,
+                            description="Alternative labels (altLabel)"
+                        ),
+                        weaviate.classes.config.Property(
+                            name="broader_terms",
+                            data_type=weaviate.classes.config.DataType.TEXT_ARRAY,
+                            skip_vectorization=True,
+                            description="Broader term URIs"
+                        ),
+                        weaviate.classes.config.Property(
+                            name="narrower_terms",
+                            data_type=weaviate.classes.config.DataType.TEXT_ARRAY,
+                            skip_vectorization=True,
+                            description="Narrower term URIs"
+                        ),
+                        weaviate.classes.config.Property(
+                            name="scope_note",
+                            data_type=weaviate.classes.config.DataType.TEXT,
+                            skip_vectorization=False,
+                            description="Usage notes and scope"
+                        ),
+                        weaviate.classes.config.Property(
                             name="language",
                             data_type=weaviate.classes.config.DataType.TEXT,
                             skip_vectorization=True,
@@ -109,14 +139,14 @@ class AuthorityVectorSearch:
                             name="broader",
                             data_type=weaviate.classes.config.DataType.TEXT,
                             skip_vectorization=True,
-                            description="Broader terms (optional)"
+                            description="Broader terms (legacy, use broader_terms)"
                         ),
                         weaviate.classes.config.Property(
                             name="narrower",
                             data_type=weaviate.classes.config.DataType.TEXT,
                             skip_vectorization=True,
-                            description="Narrower terms (optional)"
-                        )
+                            description="Narrower terms (legacy, use narrower_terms)"
+                        ),
                     ]
                 )
                 print(f"✅ Created {collection_name} collection")
