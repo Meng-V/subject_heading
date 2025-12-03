@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     print("🚀 Starting AI Subject Heading Assistant...")
     print(f"📁 Data directory: {settings.data_dir}")
     print(f"🔗 Weaviate URL: {settings.weaviate_url}")
-    print(f"🤖 Model: {settings.default_model} (temperature=0.1)")
+    print(f"🤖 Model: {settings.default_model} (reasoning_effort={settings.reasoning_effort})")
     
     try:
         authority_search.connect()

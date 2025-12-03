@@ -1,6 +1,6 @@
 ## AI Subject Heading Assistant - Multi-Image & 65X Support
 
-AI-powered subject heading generation for library cataloging, using OpenAI gpt-4o-mini.
+AI-powered subject heading generation for library cataloging, using OpenAI **o4-mini** with the Responses API (image + text processing with vision, structured output, and reasoning).
 
 ## Features
 
@@ -14,8 +14,8 @@ AI-powered subject heading generation for library cataloging, using OpenAI gpt-4
 
 | Component | Technology |
 |-----------|------------|
-| **AI Model** | gpt-4o-mini (Chat Completions API) |
-| **Quality Control** | `temperature=0.1` for consistency |
+| **AI Model** | o4-mini (Responses API) |
+| **Quality Control** | `reasoning_effort="high"` for deep reasoning |
 | **Embeddings** | text-embedding-3-large |
 | **Vector DB** | Weaviate (local Docker) |
 | **Backend** | FastAPI + Python 3.11+ |
@@ -178,12 +178,15 @@ All settings in `.env`:
 # OpenAI
 OPENAI_API_KEY=sk-...
 
-# Models (all use gpt-4o-mini)
-DEFAULT_MODEL=gpt-4o-mini
-OCR_MODEL=gpt-4o-mini
-TOPIC_MODEL=gpt-4o-mini
-EXPLANATION_MODEL=gpt-4o-mini
+# Models (all use o4-mini with Responses API)
+DEFAULT_MODEL=o4-mini
+OCR_MODEL=o4-mini
+TOPIC_MODEL=o4-mini
+EXPLANATION_MODEL=o4-mini
 EMBEDDING_MODEL=text-embedding-3-large
+
+# Responses API quality (low/medium/high)
+REASONING_EFFORT=high
 
 # Weaviate
 WEAVIATE_URL=http://localhost:8080
@@ -192,6 +195,60 @@ WEAVIATE_URL=http://localhost:8080
 DATA_DIR=./data/records
 MAX_TOPICS=10
 ```
+
+## 🔧 AI Model Configuration (o4-mini, Responses API)
+
+This project uses **OpenAI o4-mini** exclusively through the **Responses API**.
+
+### Why Responses API?
+- **Required** for o4-mini model
+- Deeper reasoning via `reasoning_effort` parameter
+- Better structured output
+- **Vision support** (OCR directly from images)
+- Multi-modal input (text + images)
+
+### Key Differences from Chat Completions API
+
+**Responses API** (o4-mini):
+```python
+response = client.responses.create(
+    model="o4-mini",
+    input=[
+        {
+            "role": "user",
+            "content": [{"type": "input_text", "text": "..."}]
+        }
+    ],
+    reasoning={"effort": "high"},
+    max_output_tokens=2000
+)
+text = response.output_text
+```
+
+**Vision Example** (multi-image OCR):
+```python
+response = client.responses.create(
+    model="o4-mini",
+    input=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "input_text", "text": "Extract metadata..."},
+                {
+                    "type": "input_image",
+                    "image_url": f"data:image/jpeg;base64,{base64_image}"
+                }
+            ]
+        }
+    ],
+    reasoning={"effort": "high"}
+)
+```
+
+### No Temperature - Use Reasoning Effort
+- `reasoning_effort="low"` - Fast, simple tasks
+- `reasoning_effort="medium"` - Balanced
+- `reasoning_effort="high"` - Deep analysis (default for cataloging)
 
 ## Vocabulary Scope (MVP)
 
