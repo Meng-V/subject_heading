@@ -1,8 +1,8 @@
-## AI Subject Heading Assistant V2 - Multi-Image & 65X Support
+## AI Subject Heading Assistant - Multi-Image & 65X Support
 
 **Enhanced backend with multi-image OCR, page classification, topic types, multi-vocabulary authority search, and full MARC 65X family support.**
 
-## 🆕 What's New in V2
+## 🆕 What's New
 
 ### Multi-Image Input
 - Upload **multiple page images** (front cover, back cover, inner flaps, TOC pages, preface pages)
@@ -39,7 +39,7 @@ Genre:     655 _7 $a Conference papers $2 fast
 
 ## 📦 New Modules
 
-### Core V2 Files
+### Core Files
 
 - **`ocr_multi.py`** - Multi-image OCR with page classification
 - **`authority_search.py`** - Multi-vocabulary vector search (replaces `lcsh_index.py`)
@@ -53,9 +53,9 @@ Genre:     655 _7 $a Conference papers $2 fast
 - **`models.py`** - Added PageImage, AuthorityCandidate, MARCField65X, topic types
 - **`llm_topics.py`** - Added topic type classification
 
-## 🚀 Quick Start V2
+## 🚀 Quick Start
 
-### 1. Start the V2 Server
+### 1. Start the Server
 
 ```bash
 cd backend
@@ -64,7 +64,7 @@ python main_v2.py
 
 Server runs on http://localhost:8000
 
-### 2. Initialize V2 Data
+### 2. Initialize Data
 
 ```bash
 python test_workflow_v2.py init
@@ -74,7 +74,7 @@ This initializes:
 - Multi-vocabulary Weaviate schemas (LCSHSubject, FASTSubject, etc.)
 - Sample LCSH and FAST authority data
 
-### 3. Run V2 Test Workflow
+### 3. Run Test Workflow
 
 ```bash
 python test_workflow_v2.py
@@ -328,11 +328,10 @@ python test_workflow.py
 ### Interactive API Docs
 
 Visit http://localhost:8000/docs for interactive Swagger UI with:
-- All V1 and V2 endpoints
 - Request/response schemas
 - Try-it-out functionality
 
-## 📂 Project Structure (V2)
+## 📂 Project Structure
 
 ```
 backend/
@@ -381,7 +380,6 @@ backend/
 ## 📖 Documentation
 
 - Full API docs: http://localhost:8000/docs
-- V1 README: [README.md](README.md)
 - Quick start: [QUICKSTART.md](QUICKSTART.md)
 - Original spec: [../guide.md](../guide.md)
 
@@ -393,5 +391,3 @@ Same `.env` file as V1, no additional configuration needed.
 
 - Check interactive docs: http://localhost:8000/docs
 - Run test script: `python test_workflow_v2.py`
-- Review V2 spec in user request
-- Check V1 docs: [README.md](README.md)
