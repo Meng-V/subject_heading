@@ -147,19 +147,22 @@ def stream_ntriples(file_path: Path, limit: int = None) -> Dict[str, Authority]:
             
             subject, predicate, obj = triple
             
-            # Track SKOS concepts
-            if predicate.endswith('type') and 'Concept' in obj:
+            # Track SKOS concepts OR MADS topics/names/etc
+            if predicate.endswith('type') and ('Concept' in obj or '/mads/rdf/v1#' in obj):
+                # SKOS: skos:Concept
+                # MADS: mads:Topic, mads:Geographic, mads:GenreForm, mads:Temporal
                 skos_concepts.add(subject)
             
             # Store properties
             properties[subject][predicate].append(obj)
             
             # Stop if we have enough concepts
-            if limit and len(skos_concepts) >= limit * 2:  # Buffer for filtering
+            # Use larger buffer since many concepts lack labels
+            if limit and len(skos_concepts) >= limit * 5:  # Buffer for filtering
                 break
     
     logger.info(f"Read {total_lines:,} lines")
-    logger.info(f"Found {len(skos_concepts):,} SKOS concepts")
+    logger.info(f"Found {len(skos_concepts):,} SKOS/MADS concepts")
     
     # Second pass: build Authority objects
     count = 0
@@ -169,22 +172,39 @@ def stream_ntriples(file_path: Path, limit: int = None) -> Dict[str, Authority]:
         
         props = properties[uri]
         
-        # Extract prefLabel
+        # Extract label (SKOS prefLabel OR MADS authoritativeLabel)
         labels = props.get('http://www.w3.org/2004/02/skos/core#prefLabel', [])
+        if not labels:
+            # Try MADS authoritativeLabel
+            auth_labels = props.get('http://www.loc.gov/mads/rdf/v1#authoritativeLabel', [])
+            if auth_labels:
+                labels = auth_labels
+        
         if not labels:
             continue  # Skip if no label
         
         label = labels[0] if labels else ""
         
-        # Extract altLabels
+        # Extract altLabels (SKOS altLabel OR MADS variants)
         alt_labels = props.get('http://www.w3.org/2004/02/skos/core#altLabel', [])
+        if not alt_labels:
+            # Try MADS variantLabel
+            alt_labels = props.get('http://www.loc.gov/mads/rdf/v1#variantLabel', [])
         
-        # Extract broader/narrower terms
+        # Extract broader/narrower terms (SKOS or MADS)
         broader = [t for t in props.get('http://www.w3.org/2004/02/skos/core#broader', [])]
-        narrower = [t for t in props.get('http://www.w3.org/2004/02/skos/core#narrower', [])]
+        if not broader:
+            broader = [t for t in props.get('http://www.loc.gov/mads/rdf/v1#hasBroaderAuthority', [])]
         
-        # Extract scope note
+        narrower = [t for t in props.get('http://www.w3.org/2004/02/skos/core#narrower', [])]
+        if not narrower:
+            narrower = [t for t in props.get('http://www.loc.gov/mads/rdf/v1#hasNarrowerAuthority', [])]
+        
+        # Extract scope note (SKOS or MADS)
         scope_notes = props.get('http://www.w3.org/2004/02/skos/core#scopeNote', [])
+        if not scope_notes:
+            # Try MADS note
+            scope_notes = props.get('http://www.loc.gov/mads/rdf/v1#note', [])
         scope_note = scope_notes[0] if scope_notes else ""
         
         # Detect subject type
@@ -249,11 +269,35 @@ def generate_embedding(text: str, client: OpenAI) -> List[float]:
 
 def batch_index_authorities(authorities: Dict[str, Authority], batch_size: int = 100):
     """Batch index authorities into Weaviate with embeddings."""
+    from weaviate.classes.data import DataObject
+    import weaviate.classes as wvc
+    
     client = OpenAI(api_key=settings.openai_api_key)
     authority_search.connect()
     
     collection = authority_search.client.collections.get("LCSHSubject")
-    authority_list = list(authorities.values())
+    
+    # Get existing URIs to avoid duplicates (using iterator for large datasets)
+    logger.info("Checking for existing records...")
+    existing_uris = set()
+    try:
+        # Use iterator to handle large result sets
+        for item in collection.iterator(
+            return_properties=["uri"]
+        ):
+            existing_uris.add(item.properties.get("uri"))
+        logger.info(f"Found {len(existing_uris)} existing records - will skip duplicates")
+    except Exception as e:
+        logger.warning(f"Could not fetch existing URIs: {e}")
+    
+    # Filter out existing authorities
+    authority_list = [auth for auth in authorities.values() if auth.uri not in existing_uris]
+    logger.info(f"Importing {len(authority_list)} new records (skipping {len(authorities) - len(authority_list)} duplicates)")
+    
+    if not authority_list:
+        logger.info("No new records to import!")
+        authority_search.client.close()
+        return 0, []
     
     total_batches = (len(authority_list) + batch_size - 1) // batch_size
     errors = []
@@ -276,10 +320,23 @@ def batch_index_authorities(authorities: Dict[str, Authority], batch_size: int =
             try:
                 vector = generate_embedding(embedding_text, client)
                 
-                objects.append({
-                    "properties": asdict(auth),
-                    "vector": vector
-                })
+                # Build properties dict explicitly (avoid reserved keywords)
+                properties = {
+                    "uri": auth.uri,
+                    "label": auth.label,
+                    "alt_labels": auth.alt_labels or [],
+                    "broader_terms": auth.broader_terms or [],
+                    "narrower_terms": auth.narrower_terms or [],
+                    "scope_note": auth.scope_note,
+                    "subject_type": auth.subject_type,
+                    "vocabulary": auth.vocabulary,
+                    "language": auth.language
+                }
+                
+                objects.append(DataObject(
+                    properties=properties,
+                    vector=vector
+                ))
             except Exception as e:
                 logger.error(f"Failed to process {auth.uri}: {e}")
                 errors.append((auth.uri, str(e)))

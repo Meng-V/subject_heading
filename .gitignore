@@ -61,3 +61,4 @@ samples/*.png
 weaviate_data/
 
 subjects.nt
+backups/weaviate_20251203.tar.gz
