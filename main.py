@@ -5,6 +5,9 @@ Supports multi-image OCR, LCSH/FAST authority search, and MARC 65X generation.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from routes import router
@@ -74,15 +77,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routes
+# Include API routes
 app.include_router(router)
 
+# Serve static files
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 @app.get("/")
-async def root():
-    """Root endpoint with API information."""
+async def read_root():
+    """Serve the frontend HTML."""
+    html_file = static_dir / "index.html"
+    if html_file.exists():
+        return FileResponse(html_file)
     return {
-        "message": "AI Subject Heading Assistant",
+        "message": "AI Subject Heading Assistant API", 
         "version": "2.0.0",
         "model": settings.default_model,
         "reasoning_effort": settings.reasoning_effort,

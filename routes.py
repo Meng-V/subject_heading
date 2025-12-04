@@ -23,7 +23,8 @@ from models import (
     SubmitFinalResponse,
     FinalRecord,
     Subject65X,
-    TopicCandidate
+    TopicCandidate,
+    Subfield
 )
 from ocr_multi import multi_ocr_processor
 from llm_topics import topic_generator
@@ -342,3 +343,161 @@ async def index_sample_authorities():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Indexing failed: {str(e)}")
+
+
+@router.post("/enhanced-search")
+async def enhanced_search(
+    title: str = Form(""),
+    author: str = Form(""),
+    abstract: str = Form(""),
+    toc: str = Form(""),
+    keywords: str = Form(""),
+    publisher_notes: str = Form(""),
+    limit: int = Form(5),
+    min_score: float = Form(0.70)
+):
+    """
+    Enhanced subject search with rich book metadata.
+    
+    Accepts multiple metadata fields to build a rich semantic query.
+    Returns MARC 65X fields ready to use.
+    
+    Args:
+        title: Book title
+        author: Author name(s)
+        abstract: Book summary/abstract
+        toc: Table of contents (newline or comma separated)
+        keywords: Keywords (comma separated)
+        publisher_notes: Publisher description
+        limit: Max results per vocabulary
+        min_score: Minimum confidence score
+    
+    Returns:
+        JSON with marc_fields and metadata
+    """
+    try:
+        # Parse TOC and keywords
+        toc_list = []
+        if toc:
+            # Split by newlines or commas
+            toc_list = [line.strip() for line in toc.replace(',', '\n').split('\n') if line.strip()]
+        
+        keywords_list = []
+        if keywords:
+            keywords_list = [kw.strip() for kw in keywords.split(',') if kw.strip()]
+        
+        # Build rich query
+        query_parts = []
+        
+        if title:
+            query_parts.append(f"TITLE: {title}")
+            query_parts.append(title)  # Repeat for emphasis
+        
+        if keywords_list:
+            query_parts.append(f"TOPICS: {' | '.join(keywords_list)}")
+        
+        if abstract:
+            abstract_snippet = abstract[:300] + "..." if len(abstract) > 300 else abstract
+            query_parts.append(f"ABOUT: {abstract_snippet}")
+        
+        if toc_list:
+            toc_sample = toc_list[:5]
+            toc_text = " | ".join(toc_sample)
+            query_parts.append(f"CONTENTS: {toc_text}")
+        
+        if author:
+            query_parts.append(f"AUTHOR: {author}")
+        
+        if publisher_notes:
+            notes_snippet = publisher_notes[:200] + "..." if len(publisher_notes) > 200 else publisher_notes
+            query_parts.append(f"DESCRIPTION: {notes_snippet}")
+        
+        rich_query = " | ".join(query_parts)
+        
+        if not rich_query:
+            raise HTTPException(status_code=400, detail="Please provide at least one input field")
+        
+        # Connect to authority search
+        if not authority_search.client:
+            authority_search.connect()
+        
+        # Search authorities
+        results = await authority_search.search_authorities(
+            topic=rich_query,
+            vocabularies=["lcsh", "fast"],
+            limit_per_vocab=limit,
+            min_score=min_score
+        )
+        
+        # Convert to MARC 65X
+        marc_fields = []
+        for result in results:
+            # Determine MARC tag
+            subject_type = getattr(result, 'subject_type', 'topical')
+            if subject_type == 'geographic':
+                tag = '651'
+            elif subject_type == 'genre_form':
+                tag = '655'
+            else:
+                tag = '650'
+            
+            # Determine second indicator
+            vocab = result.vocabulary.lower()
+            ind2 = '0' if vocab == 'lcsh' else '7'
+            
+            # Parse heading into subfields
+            heading = result.label
+            subfields = []
+            
+            if '--' in heading:
+                parts = heading.split('--')
+                subfields.append({"code": "a", "value": parts[0]})
+                
+                for part in parts[1:]:
+                    if any(keyword in part.lower() for keyword in ['century', 'b.c.', 'a.d.']) or ('-' in part and any(char.isdigit() for char in part)):
+                        code = 'y'
+                    elif part[0].isupper() and not any(keyword in part.lower() for keyword in ['history', 'politics', 'social', 'conditions', 'civilization']):
+                        code = 'z'
+                    else:
+                        code = 'x'
+                    subfields.append({"code": code, "value": part})
+            else:
+                subfields.append({"code": "a", "value": heading})
+            
+            if result.uri:
+                subfields.append({"code": "0", "value": result.uri})
+            
+            if vocab != 'lcsh':
+                subfields.append({"code": "2", "value": vocab})
+            
+            # Build MARC string
+            marc_string = f"{tag} _{ind2}"
+            for sf in subfields:
+                marc_string += f" ${sf['code']} {sf['value']}"
+            marc_string += "."
+            
+            marc_fields.append({
+                "tag": tag,
+                "ind1": "_",
+                "ind2": ind2,
+                "subfields": subfields,
+                "vocabulary": vocab,
+                "uri": result.uri,
+                "score": result.score,
+                "label": result.label,
+                "marc_string": marc_string
+            })
+        
+        return {
+            "success": True,
+            "count": len(marc_fields),
+            "marc_fields": marc_fields,
+            "rich_query": rich_query,
+            "input_fields_used": sum([bool(title), bool(author), bool(abstract), bool(toc), bool(keywords), bool(publisher_notes)]),
+            "message": f"Found {len(marc_fields)} MARC subject heading(s)"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Enhanced search failed: {str(e)}")
