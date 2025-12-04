@@ -457,7 +457,6 @@ Before going live:
 - 3072-dimension semantic embeddings
 - Fast search (<100ms)
 - MARC 65X output
-- $7.40 budget remaining
 
 **Next Immediate Action**:
 ```bash

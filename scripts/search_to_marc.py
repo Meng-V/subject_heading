@@ -57,8 +57,9 @@ def authority_to_marc65x(authority_candidate, score: float = None) -> Subject65X
     subfields = []
     
     # Check if heading has subdivisions (marked by --)
-    if ' -- ' in heading:
-        parts = heading.split(' -- ')
+    # Note: LCSH uses '--' without spaces
+    if '--' in heading:
+        parts = heading.split('--')
         
         # First part is always $a
         subfields.append(Subfield(code='a', value=parts[0]))
@@ -66,10 +67,13 @@ def authority_to_marc65x(authority_candidate, score: float = None) -> Subject65X
         # Subsequent parts need classification
         for part in parts[1:]:
             # Determine subfield code
-            if any(keyword in part.lower() for keyword in ['century', 'b.c.', 'a.d.', '-']):
+            # Chronological patterns include year ranges (e.g., "960-1644", "20th century")
+            if any(keyword in part.lower() for keyword in ['century', 'b.c.', 'a.d.']) or (
+                '-' in part and any(char.isdigit() for char in part)
+            ):
                 # Chronological subdivision: $y
                 code = 'y'
-            elif part[0].isupper() and not any(keyword in part.lower() for keyword in ['history', 'politics', 'social']):
+            elif part[0].isupper() and not any(keyword in part.lower() for keyword in ['history', 'politics', 'social', 'conditions', 'civilization']):
                 # Geographic subdivision: $z (starts with capital, looks like place name)
                 code = 'z'
             else:
@@ -170,8 +174,8 @@ async def main():
     parser.add_argument('query', help='Search query')
     parser.add_argument('--limit', type=int, default=5, help='Max results per vocabulary')
     parser.add_argument('--min-score', type=float, default=0.70, help='Minimum confidence score')
-    parser.add_argument('--format', choices=['display', 'json', 'both'], default='display',
-                       help='Output format')
+    parser.add_argument('--format', choices=['compact', 'display', 'json', 'both'], default='compact',
+                       help='Output format (compact=MARC only, display=with details, json=JSON, both=all)')
     
     args = parser.parse_args()
     
@@ -193,24 +197,31 @@ async def main():
     
     print(f"\n✅ Found {len(marc_fields)} result(s)\n")
     
-    # Display results
-    for i, marc_field in enumerate(marc_fields, 1):
-        print(f"\n{'='*80}")
-        print(f"Result {i}/{len(marc_fields)}")
-        print(f"{'='*80}")
+    # Display results based on format
+    if args.format == 'compact':
+        # Compact format - just the MARC fields
+        print("📋 MARC 65X Fields (ready to copy/paste):\n")
+        print("="*80)
+        for i, marc_field in enumerate(marc_fields, 1):
+            vocab_tag = f" ({marc_field.vocabulary.upper()})" if marc_field.vocabulary != 'lcsh' else ""
+            print(f"{i:2}. {format_marc_display(marc_field):70s} [{marc_field.score:.0%}]{vocab_tag}")
+        print("="*80)
+    
+    elif args.format in ['display', 'both']:
+        # Detailed format
+        print("📋 MARC 65X Fields (ready to copy/paste):\n")
+        print("="*80)
         
-        if args.format in ['display', 'both']:
-            print("\n📋 MARC Format:")
-            print(f"   {format_marc_display(marc_field)}")
+        for i, marc_field in enumerate(marc_fields, 1):
+            # MARC format - one line per field
+            print(f"{i:2}. {format_marc_display(marc_field)}")
             
-            print("\n📊 Details:")
-            print(f"   Tag: {marc_field.tag} (Subject - {marc_field.tag})")
-            print(f"   Indicators: {marc_field.ind1}{marc_field.ind2}")
-            print(f"   Vocabulary: {marc_field.vocabulary.upper()}")
-            print(f"   Confidence: {marc_field.score:.1%}")
-            print(f"   URI: {marc_field.uri}")
+            # Details on next line
+            vocab_indicator = f"({marc_field.vocabulary.upper()})" if marc_field.vocabulary != 'lcsh' else ""
+            print(f"    Confidence: {marc_field.score:.1%} {vocab_indicator}")
             
-            print("\n📝 Subfields:")
+            # Show subfield breakdown
+            print("    Subfields:")
             for sf in marc_field.subfields:
                 sf_meaning = {
                     'a': 'Main heading',
@@ -218,14 +229,19 @@ async def main():
                     'y': 'Chronological subdivision',
                     'z': 'Geographic subdivision',
                     'v': 'Form subdivision',
-                    '0': 'Authority record control number',
-                    '2': 'Source'
+                    '0': 'Authority URI',
+                    '2': 'Source vocabulary'
                 }.get(sf.code, 'Other')
-                print(f"      ${sf.code} {sf.value:30s}  ({sf_meaning})")
-        
-        if args.format in ['json', 'both']:
-            print("\n🔧 JSON Format:")
+                print(f"       ${sf.code} {sf.value} ({sf_meaning})")
+            print()
+    
+    # JSON format if requested
+    if args.format in ['json', 'both']:
+        print("\n🔧 JSON Format:\n")
+        for i, marc_field in enumerate(marc_fields, 1):
+            print(f"Field {i}:")
             print(json.dumps(format_marc_json(marc_field), indent=2))
+            print()
     
     # Summary
     print("\n" + "=" * 80)

@@ -62,3 +62,13 @@ weaviate_data/
 
 subjects.nt
 backups/weaviate_20251203.tar.gz
+output.json
+NEXT_STEPS_SUMMARY.md
+NEXT_ACTIONS.md
+IMPORT_MORE_RECORDS.md
+examples/book_example3.json
+examples/book_example2.json
+examples/book_example1.json
+ENHANCED_SEARCH_GUIDE.md
+NEXT_ACTIONS.md
+NEXT_ACTIONS.md
