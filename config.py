@@ -6,6 +6,7 @@ Reasoning effort is set to 'high' for better quality outputs.
 import os
 from pathlib import Path
 from typing import Literal
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
@@ -40,9 +41,10 @@ class Settings(BaseSettings):
     topic_temperature: float = float(os.getenv("TOPIC_TEMPERATURE", "0.1"))  # Deprecated
     max_topics: int = int(os.getenv("MAX_TOPICS", "10"))
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=False
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

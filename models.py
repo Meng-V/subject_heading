@@ -2,7 +2,7 @@
 from typing import List, Optional, Literal
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # =============================================================================
@@ -151,8 +151,7 @@ class Subject65X(BaseModel):
         """Get second indicator based on vocabulary."""
         return "0" if vocabulary == "lcsh" else "7"
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 # Alias for backward compatibility
