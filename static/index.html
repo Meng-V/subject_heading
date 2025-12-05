@@ -19,7 +19,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -44,6 +44,50 @@
             font-size: 1rem;
         }
         
+        /* Tab System */
+        .tab-container {
+            border-bottom: 2px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 0;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
         .content {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -57,6 +101,84 @@
             }
         }
         
+        /* Upload Section */
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f4ff;
+        }
+        
+        .upload-area.drag-over {
+            background: #e8f0fe;
+            border-color: #667eea;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .upload-text p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        #imageInput {
+            display: none;
+        }
+        
+        .file-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .file-item {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .file-item-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-remove {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .file-remove:hover {
+            background: #c82333;
+        }
+        
+        /* Form Section */
         .form-section {
             display: flex;
             flex-direction: column;
@@ -90,6 +212,10 @@
             background: #999;
         }
         
+        .badge.auto-filled {
+            background: #28a745;
+        }
+        
         input[type="text"],
         textarea {
             padding: 12px;
@@ -105,6 +231,12 @@
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        input.auto-filled,
+        textarea.auto-filled {
+            border-color: #28a745;
+            background: #f0fff4;
         }
         
         textarea {
@@ -124,19 +256,11 @@
             gap: 15px;
         }
         
-        input[type="number"],
-        input[type="range"] {
+        input[type="number"] {
             padding: 10px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 0.95rem;
-        }
-        
-        .range-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 5px;
         }
         
         .btn-primary {
@@ -163,6 +287,23 @@
             transform: none;
         }
         
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        /* Results Section */
         .results-section {
             display: flex;
             flex-direction: column;
@@ -243,34 +384,46 @@
         
         .marc-field {
             background: #f8f9fa;
-            padding: 15px;
+            padding: 15px 50px 15px 15px;
             border-radius: 6px;
             font-family: 'Courier New', monospace;
             font-size: 0.95rem;
             margin-bottom: 10px;
             position: relative;
+            line-height: 1.6;
         }
         
         .copy-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
             background: #667eea;
             color: white;
             border: none;
-            padding: 5px 12px;
-            border-radius: 4px;
+            padding: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.8rem;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
         }
         
         .copy-btn:hover {
             background: #764ba2;
+            transform: translateY(-50%) scale(1.1);
         }
         
         .copy-btn.copied {
             background: #28a745;
+        }
+        
+        .copy-btn svg {
+            width: 16px;
+            height: 16px;
         }
         
         .label-text {
@@ -344,7 +497,7 @@
         
         .summary-stats {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin-top: 15px;
         }
@@ -362,101 +515,179 @@
             font-size: 0.85rem;
             opacity: 0.9;
         }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📚 Enhanced MARC Subject Search</h1>
-            <p>Provide rich book metadata for accurate LCSH subject headings</p>
+            <p>Upload images or manually enter book metadata for accurate LCSH subject headings</p>
         </div>
         
-        <div class="content">
-            <!-- Form Section -->
-            <div class="form-section">
-                <form id="searchForm">
-                    <div class="form-group">
-                        <label>
-                            📖 Title
-                            <span class="badge">HIGH PRIORITY</span>
-                        </label>
-                        <input type="text" id="title" name="title" placeholder="e.g., History of Chinese Calligraphy">
-                        <span class="form-hint">Book title</span>
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('upload')">📤 Upload Images</button>
+                <button class="tab" onclick="switchTab('manual')">✍️ Manual Entry</button>
+            </div>
+        </div>
+        
+        <!-- Upload Images Tab -->
+        <div id="uploadTab" class="tab-content active">
+            <div class="content">
+                <div class="form-section">
+                    <div class="upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">
+                            <h3>Upload Book Images</h3>
+                            <p>Drag & drop or click to upload JPG, PNG, or PDF files</p>
+                            <p style="font-size: 0.9rem; color: #999;">Cover, back cover, TOC, title page, etc.</p>
+                        </div>
+                        <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png,application/pdf" multiple>
                     </div>
                     
-                    <div class="form-group">
-                        <label>
-                            ✍️ Author
-                            <span class="badge optional">OPTIONAL</span>
-                        </label>
-                        <input type="text" id="author" name="author" placeholder="e.g., Wang Xizhi">
-                        <span class="form-hint">Author name(s)</span>
+                    <div id="fileList" class="file-list" style="display:none;">
+                        <h4>Uploaded Files:</h4>
+                        <div id="fileItems"></div>
                     </div>
                     
-                    <div class="form-group">
-                        <label>
-                            📝 Abstract/Summary
-                            <span class="badge">HIGH PRIORITY</span>
-                        </label>
-                        <textarea id="abstract" name="abstract" placeholder="e.g., This comprehensive book explores the development and evolution of Chinese calligraphy from ancient times through the Ming and Qing dynasties..."></textarea>
-                        <span class="form-hint">Book summary from back cover or flap</span>
-                    </div>
+                    <button class="btn-primary" id="ocrBtn" style="display:none;" onclick="processImages()">
+                        🤖 Extract Metadata with AI
+                    </button>
                     
-                    <div class="form-group">
-                        <label>
-                            📋 Table of Contents
-                            <span class="badge optional">OPTIONAL</span>
-                        </label>
-                        <textarea id="toc" name="toc" placeholder="Chapter 1: Origins and Early Development&#10;Chapter 2: The Golden Age&#10;Chapter 3: Ming Dynasty Masters"></textarea>
-                        <span class="form-hint">One chapter per line or comma-separated</span>
+                    <div id="ocrProgress" style="display:none;">
+                        <p>Processing images with OCR...</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>
-                            🔖 Keywords
-                            <span class="badge">HIGH PRIORITY</span>
-                        </label>
-                        <input type="text" id="keywords" name="keywords" placeholder="e.g., calligraphy, Chinese art, Ming dynasty">
-                        <span class="form-hint">Comma-separated keywords</span>
+                </div>
+                
+                <div class="results-section">
+                    <div id="uploadResultsContainer">
+                        <div class="info-card">
+                            <h3>📖 How It Works</h3>
+                            <p><strong>Step 1:</strong> Upload multiple images (cover, back cover, TOC, title page)</p>
+                            <p><strong>Step 2:</strong> AI will automatically extract title, author, abstract, TOC, keywords</p>
+                            <p><strong>Step 3:</strong> Review and search for MARC subjects</p>
+                            <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                                <strong>Supported formats:</strong> JPG, PNG, PDF<br>
+                                <strong>Best practice:</strong> Include cover + back + TOC for best results
+                            </p>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>
-                            📰 Publisher Notes
-                            <span class="badge optional">OPTIONAL</span>
-                        </label>
-                        <textarea id="publisher_notes" name="publisher_notes" placeholder="e.g., Essential reading for art historians..."></textarea>
-                        <span class="form-hint">Publisher description or marketing text</span>
-                    </div>
-                    
-                    <div class="settings-row">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manual Entry Tab -->
+        <div id="manualTab" class="tab-content">
+            <div class="content">
+                <div class="form-section">
+                    <form id="searchForm">
                         <div class="form-group">
-                            <label>Max Results</label>
-                            <input type="number" id="limit" name="limit" value="5" min="1" max="20">
+                            <label>
+                                📖 Title
+                                <span class="badge">HIGH PRIORITY</span>
+                                <span class="badge auto-filled" id="titleBadge" style="display:none;">AUTO-FILLED</span>
+                            </label>
+                            <input type="text" id="title" name="title" placeholder="e.g., History of Chinese Calligraphy">
+                            <span class="form-hint">Book title</span>
                         </div>
                         
                         <div class="form-group">
-                            <label>Min Confidence</label>
-                            <input type="number" id="min_score" name="min_score" value="0.70" min="0" max="1" step="0.05">
+                            <label>
+                                ✍️ Author
+                                <span class="badge optional">OPTIONAL</span>
+                                <span class="badge auto-filled" id="authorBadge" style="display:none;">AUTO-FILLED</span>
+                            </label>
+                            <input type="text" id="author" name="author" placeholder="e.g., Wang Xizhi">
+                            <span class="form-hint">Author name(s)</span>
                         </div>
-                    </div>
-                    
-                    <button type="submit" class="btn-primary" id="searchBtn">
-                        🔍 Search MARC Subjects
-                    </button>
-                </form>
-            </div>
-            
-            <!-- Results Section -->
-            <div class="results-section">
-                <div id="resultsContainer">
-                    <div class="empty-state">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.35-4.35"></path>
-                        </svg>
-                        <h3>Ready to Search</h3>
-                        <p>Fill in the form and click "Search MARC Subjects" to get started</p>
+                        
+                        <div class="form-group">
+                            <label>
+                                📝 Abstract/Summary
+                                <span class="badge">HIGH PRIORITY</span>
+                                <span class="badge auto-filled" id="abstractBadge" style="display:none;">AUTO-FILLED</span>
+                            </label>
+                            <textarea id="abstract" name="abstract" placeholder="e.g., This comprehensive book explores the development and evolution of Chinese calligraphy..."></textarea>
+                            <span class="form-hint">Book summary from back cover or flap</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                📋 Table of Contents
+                                <span class="badge optional">OPTIONAL</span>
+                                <span class="badge auto-filled" id="tocBadge" style="display:none;">AUTO-FILLED</span>
+                            </label>
+                            <textarea id="toc" name="toc" placeholder="Chapter 1: Origins and Early Development&#10;Chapter 2: The Golden Age"></textarea>
+                            <span class="form-hint">One chapter per line or comma-separated</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                🔖 Keywords
+                                <span class="badge">HIGH PRIORITY</span>
+                                <span class="badge auto-filled" id="keywordsBadge" style="display:none;">AUTO-FILLED</span>
+                            </label>
+                            <input type="text" id="keywords" name="keywords" placeholder="e.g., calligraphy, Chinese art, Ming dynasty">
+                            <span class="form-hint">Comma-separated keywords</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                📰 Publisher Notes
+                                <span class="badge optional">OPTIONAL</span>
+                                <span class="badge auto-filled" id="publisherBadge" style="display:none;">AUTO-FILLED</span>
+                            </label>
+                            <textarea id="publisher_notes" name="publisher_notes" placeholder="e.g., Essential reading for art historians..."></textarea>
+                            <span class="form-hint">Publisher description or marketing text</span>
+                        </div>
+                        
+                        <div class="settings-row">
+                            <div class="form-group">
+                                <label>Max Results</label>
+                                <input type="number" id="limit" name="limit" value="5" min="1" max="20">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Min Confidence</label>
+                                <input type="number" id="min_score" name="min_score" value="0.70" min="0" max="1" step="0.05">
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary" id="searchBtn">
+                            🔍 Search MARC Subjects
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="results-section">
+                    <div id="resultsContainer">
+                        <div class="empty-state">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <h3>Ready to Search</h3>
+                            <p>Fill in the form and click "Search MARC Subjects" to get started</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -464,6 +695,251 @@
     </div>
     
     <script>
+        let uploadedFiles = [];
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            if (tabName === 'upload') {
+                document.getElementById('uploadTab').classList.add('active');
+                document.querySelector('.tab:first-child').classList.add('active');
+            } else {
+                document.getElementById('manualTab').classList.add('active');
+                document.querySelector('.tab:last-child').classList.add('active');
+            }
+        }
+        
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const fileList = document.getElementById('fileList');
+        const fileItems = document.getElementById('fileItems');
+        const ocrBtn = document.getElementById('ocrBtn');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        imageInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(files) {
+            for (let file of files) {
+                if (file.type.match('image.*') || file.type === 'application/pdf') {
+                    uploadedFiles.push(file);
+                }
+            }
+            displayFiles();
+        }
+        
+        function displayFiles() {
+            if (uploadedFiles.length === 0) {
+                fileList.style.display = 'none';
+                ocrBtn.style.display = 'none';
+                return;
+            }
+            
+            fileList.style.display = 'block';
+            ocrBtn.style.display = 'block';
+            
+            fileItems.innerHTML = uploadedFiles.map((file, index) => `
+                <div class="file-item">
+                    <div class="file-item-info">
+                        <span>${file.type.includes('pdf') ? '📄' : '🖼️'}</span>
+                        <span>${file.name}</span>
+                        <span style="color: #999; font-size: 0.85rem;">(${(file.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                    <button class="file-remove" onclick="removeFile(${index})">Remove</button>
+                </div>
+            `).join('');
+        }
+        
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            displayFiles();
+        }
+        
+        // Process images with OCR
+        async function processImages() {
+            if (uploadedFiles.length === 0) return;
+            
+            const ocrBtn = document.getElementById('ocrBtn');
+            const ocrProgress = document.getElementById('ocrProgress');
+            const progressFill = document.getElementById('progressFill');
+            const uploadResults = document.getElementById('uploadResultsContainer');
+            
+            ocrBtn.disabled = true;
+            ocrBtn.textContent = '⏳ Processing...';
+            ocrProgress.style.display = 'block';
+            
+            try {
+                const formData = new FormData();
+                uploadedFiles.forEach(file => {
+                    formData.append('images', file);
+                });
+                
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 5;
+                    if (progress <= 90) {
+                        progressFill.style.width = progress + '%';
+                    }
+                }, 200);
+                
+                const response = await fetch('/api/ingest-images', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                
+                const data = await response.json();
+                
+                // Debug logging
+                console.log('📊 OCR Response:', data);
+                console.log('📖 Metadata:', data.metadata);
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'OCR processing failed');
+                }
+                
+                // Auto-fill form fields
+                if (data.metadata) {
+                    // Check if any metadata was actually found
+                    const hasData = data.metadata.title || data.metadata.author || data.metadata.summary;
+                    
+                    if (!hasData) {
+                        // No metadata found - show warning
+                        uploadResults.innerHTML = `
+                            <div class="info-card" style="border-left-color: #ff9800; background: #fff3e0;">
+                                <h3 style="color: #f57c00;">⚠️ No Metadata Found</h3>
+                                <p><strong>The AI couldn't extract book metadata from your images.</strong></p>
+                                <p style="margin-top: 10px;">Common reasons:</p>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li>You uploaded a <strong>webpage screenshot</strong> instead of book photos</li>
+                                    <li>Images are too blurry or low resolution</li>
+                                    <li>Wrong pages uploaded (not cover/back/TOC/title page)</li>
+                                </ul>
+                                <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                                    <strong>What to do:</strong><br>
+                                    • Upload <strong>photos of physical book pages</strong> (not screenshots)<br>
+                                    • Or use the <strong>Manual Entry tab</strong> to type metadata
+                                </p>
+                                <p style="margin-top: 15px;">
+                                    <button class="btn-secondary" onclick="switchTab('manual')">
+                                        ✏️ Switch to Manual Entry
+                                    </button>
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        // Success - some metadata found
+                        fillFormFromOCR(data.metadata);
+                        
+                        uploadResults.innerHTML = `
+                            <div class="info-card" style="border-left-color: #28a745;">
+                                <h3 style="color: #28a745;">✅ Metadata Extracted!</h3>
+                                <p><strong>Title:</strong> ${data.metadata.title || 'Not found'}</p>
+                                <p><strong>Author:</strong> ${data.metadata.author || 'Not found'}</p>
+                                <p><strong>Summary:</strong> ${data.metadata.summary ? data.metadata.summary.substring(0, 100) + '...' : 'Not found'}</p>
+                                <p style="margin-top: 15px;">
+                                    <button class="btn-secondary" onclick="switchTab('manual')">
+                                        ✏️ Review & Edit → Search
+                                    </button>
+                                </p>
+                            </div>
+                        `;
+                        
+                        // Auto-switch to manual tab after 2 seconds
+                        setTimeout(() => {
+                            switchTab('manual');
+                        }, 2000);
+                    }
+                }
+                
+            } catch (error) {
+                uploadResults.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                        <p style="margin-top: 10px; font-size: 0.9rem;">Try uploading clearer images or manually enter the metadata.</p>
+                    </div>
+                `;
+            } finally {
+                ocrBtn.disabled = false;
+                ocrBtn.textContent = '🤖 Extract Metadata with AI';
+                setTimeout(() => {
+                    ocrProgress.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 1000);
+            }
+        }
+        
+        // Fill form from OCR data
+        function fillFormFromOCR(metadata) {
+            const fields = ['title', 'author', 'abstract', 'keywords', 'publisher_notes'];
+            
+            if (metadata.title) {
+                document.getElementById('title').value = metadata.title;
+                document.getElementById('title').classList.add('auto-filled');
+                document.getElementById('titleBadge').style.display = 'inline-block';
+            }
+            
+            if (metadata.author) {
+                document.getElementById('author').value = metadata.author;
+                document.getElementById('author').classList.add('auto-filled');
+                document.getElementById('authorBadge').style.display = 'inline-block';
+            }
+            
+            if (metadata.summary) {
+                document.getElementById('abstract').value = metadata.summary;
+                document.getElementById('abstract').classList.add('auto-filled');
+                document.getElementById('abstractBadge').style.display = 'inline-block';
+            }
+            
+            if (metadata.table_of_contents && metadata.table_of_contents.length > 0) {
+                document.getElementById('toc').value = metadata.table_of_contents.join('\n');
+                document.getElementById('toc').classList.add('auto-filled');
+                document.getElementById('tocBadge').style.display = 'inline-block';
+            }
+            
+            // Extract keywords from preface or generate from title
+            if (metadata.title) {
+                const keywords = metadata.title.split(' ')
+                    .filter(word => word.length > 4)
+                    .slice(0, 5)
+                    .join(', ');
+                if (keywords) {
+                    document.getElementById('keywords').value = keywords;
+                    document.getElementById('keywords').classList.add('auto-filled');
+                    document.getElementById('keywordsBadge').style.display = 'inline-block';
+                }
+            }
+        }
+        
+        // Manual search form
         const form = document.getElementById('searchForm');
         const resultsContainer = document.getElementById('resultsContainer');
         const searchBtn = document.getElementById('searchBtn');
@@ -471,11 +947,9 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Disable button
             searchBtn.disabled = true;
             searchBtn.textContent = '🔄 Searching...';
             
-            // Show loading
             resultsContainer.innerHTML = `
                 <div class="loading">
                     <div class="spinner"></div>
@@ -553,7 +1027,10 @@
                         
                         <div class="marc-field">
                             <button class="copy-btn" onclick="copyToClipboard(this, '${field.marc_string.replace(/'/g, "\\'")}')">
-                                Copy
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
                             </button>
                             ${field.marc_string}
                         </div>
@@ -573,12 +1050,11 @@
         
         function copyToClipboard(button, text) {
             navigator.clipboard.writeText(text).then(() => {
-                const originalText = button.textContent;
-                button.textContent = '✓ Copied!';
+                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
                 button.classList.add('copied');
                 
                 setTimeout(() => {
-                    button.textContent = originalText;
+                    button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
                     button.classList.remove('copied');
                 }, 2000);
             });

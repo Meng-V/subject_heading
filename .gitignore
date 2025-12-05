@@ -64,4 +64,4 @@ weaviate_data/
 subjects.nt
 backups/weaviate_20251203.tar.gz
 output.json
-*.md
+WORK_COMPLETED.md
