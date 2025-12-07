@@ -303,7 +303,9 @@ async def authority_stats():
 async def initialize_authorities():
     """Initialize authority schemas in Weaviate (admin endpoint)."""
     try:
-        authority_search.connect()
+        # Use existing connection from global instance
+        if not authority_search.client:
+            authority_search.connect()
         authority_search.initialize_schemas()
         return {"success": True, "message": "Authority schemas initialized"}
     except Exception as e:
@@ -332,7 +334,9 @@ async def index_sample_authorities():
             {"label": "China", "uri": "(OCoLC)fst01206073"},
         ]
         
-        authority_search.connect()
+        # Use existing connection from global instance
+        if not authority_search.client:
+            authority_search.connect()
         authority_search.batch_index_authorities(lcsh_samples, "lcsh")
         authority_search.batch_index_authorities(fast_samples, "fast")
         

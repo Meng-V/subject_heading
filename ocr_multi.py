@@ -66,13 +66,14 @@ Return ONLY valid JSON in this format:
                             {"type": "input_text", "text": prompt},
                             {
                                 "type": "input_image",
+                                "detail": "auto",
                                 "image_url": f"data:image/jpeg;base64,{image_base64}"
                             }
                         ]
                     }
                 ],
                 reasoning={"effort": self.reasoning_effort},
-                max_output_tokens=2000
+                max_output_tokens=16000
             )
             
             content = response.output_text
@@ -166,10 +167,14 @@ If any field is not found, use empty string "" for text fields or empty array []
                     }
                 ],
                 reasoning={"effort": self.reasoning_effort},
-                max_output_tokens=3000
+                max_output_tokens=16000
             )
             
             content = response.output_text
+            
+            # Check for incomplete response
+            if not content or response.status == "incomplete":
+                raise ValueError("API response incomplete - increase max_output_tokens")
             
             # Extract JSON
             if "```json" in content:

@@ -53,18 +53,28 @@ class TopicGenerator:
         # Format metadata for the prompt
         metadata_text = self._format_metadata_for_prompt(metadata)
         
-        # Create the prompt
-        prompt = f"""You are an expert library cataloger with deep knowledge of subject analysis.
+        # Create the prompt with East Asian collection focus
+        prompt = f"""You are an expert library cataloger specializing in EAST ASIAN COLLECTIONS.
 Based on the following book metadata, identify 3-{self.max_topics} distinct concepts covering topical subjects, geographic locations, and genre/form terms.
+
+COLLECTION FOCUS: EAST ASIAN STUDIES
+This catalog serves collections from China, Korea, Japan, Taiwan, Mongolia, and neighboring regions.
+Prioritize topics relevant to:
+- Chinese, Korean, Japanese, and CJK (Chinese-Japanese-Korean) studies
+- East Asian history, culture, arts, language, literature, philosophy, and religion
+- Asian Studies and area studies related to East Asia
+- Geographic locations within or related to East Asia
+- Topics involving cross-cultural exchange with East Asia
 
 IMPORTANT GUIDELINES:
 - Output semantic topic statements in natural language
 - Do NOT output LCSH (Library of Congress Subject Headings) formatted headings
 - For each topic, classify its type:
-  * "topical" - subject matter, themes, concepts (e.g., "Chinese calligraphy techniques")
-  * "geographic" - places, regions, countries (e.g., "China", "Beijing")
-  * "genre" - form/genre terms (e.g., "Conference papers", "Handbooks", "Essays")
+  * "topical" - subject matter, themes, concepts (e.g., "Chinese calligraphy", "Korean Buddhism", "Japanese literature")
+  * "geographic" - places, regions, countries (e.g., "China", "Seoul, Korea", "Kyoto, Japan")
+  * "genre" - form/genre terms (e.g., "Conference papers", "Handbooks", "Essays", "Poetry collections")
 - Be specific but not overly granular
+- Consider East Asian context and cultural significance
 - Consider the title, summary, table of contents, and preface
 
 BOOK METADATA:
@@ -90,8 +100,12 @@ Return ONLY the JSON array, no additional text."""
                     }
                 ],
                 reasoning={"effort": self.reasoning_effort},
-                max_output_tokens=2000
+                max_output_tokens=16000
             )
+            
+            # Check for incomplete response
+            if response.status == "incomplete":
+                raise ValueError(f"API response incomplete - reasoning used all tokens")
             
             # Parse response from Responses API - try structured output first
             if hasattr(response, 'output') and response.output and len(response.output) > 0:

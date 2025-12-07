@@ -226,7 +226,7 @@ Provide a brief, cataloger-friendly explanation (1-2 sentences max)."""
                     }
                 ],
                 reasoning={"effort": self.reasoning_effort},
-                max_output_tokens=150
+                max_output_tokens=8000
             )
             return response.output_text.strip()
         except:

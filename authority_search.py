@@ -35,6 +35,10 @@ class AuthorityVectorSearch:
         
     def connect(self):
         """Connect to Weaviate instance."""
+        # Don't create new connection if already connected
+        if self.client is not None:
+            return True
+            
         try:
             # Parse URL to extract host and port
             from urllib.parse import urlparse
@@ -54,7 +58,12 @@ class AuthorityVectorSearch:
     def disconnect(self):
         """Disconnect from Weaviate."""
         if self.client:
-            self.client.close()
+            try:
+                self.client.close()
+            except Exception as e:
+                print(f"Warning: Error closing Weaviate connection: {e}")
+            finally:
+                self.client = None
     
     def initialize_schemas(self):
         """Initialize authority collection schemas for MVP vocabularies (LCSH + FAST)."""
@@ -81,7 +90,7 @@ class AuthorityVectorSearch:
                 self.client.collections.create(
                     name=collection_name,
                     # No vectorizer - we provide vectors manually
-                    vectorizer_config=weaviate.classes.config.Configure.Vectorizer.none(),
+                    vector_config=weaviate.classes.config.Configure.Vectorizer.none(),
                     properties=[
                         weaviate.classes.config.Property(
                             name="label",
@@ -265,12 +274,49 @@ class AuthorityVectorSearch:
         except Exception as e:
             raise Exception(f"Failed to batch index: {str(e)}")
     
+    def _boost_east_asian_score(self, candidate: AuthorityCandidate, topic: str) -> float:
+        """
+        Boost scores for East Asian-related subjects.
+        
+        Args:
+            candidate: Authority candidate
+            topic: Original search topic
+            
+        Returns:
+            Boosted score
+        """
+        # East Asian keywords for boosting
+        east_asian_keywords = [
+            'china', 'chinese', 'japan', 'japanese', 'korea', 'korean',
+            'taiwan', 'taiwanese', 'mongolia', 'mongolian', 'tibet', 'tibetan',
+            'east asia', 'asia', 'asian', 'cjk', 'sino', 'confucian',
+            'buddhis', 'tao', 'zen', 'calligraphy', 'hanzi', 'kanji', 'hangul',
+            'ming', 'qing', 'tang', 'song', 'edo', 'meiji', 'joseon',
+            'beijing', 'shanghai', 'hong kong', 'tokyo', 'kyoto', 'seoul',
+            'yangtze', 'yellow river', 'mekong'
+        ]
+        
+        label_lower = candidate.label.lower()
+        topic_lower = topic.lower()
+        
+        # Check if either label or topic contains East Asian keywords
+        has_east_asian = any(keyword in label_lower or keyword in topic_lower 
+                            for keyword in east_asian_keywords)
+        
+        if has_east_asian:
+            # Boost by 10% (multiply by 1.1), cap at 1.0
+            boosted_score = min(candidate.score * 1.1, 1.0)
+            return boosted_score
+        
+        return candidate.score
+    
     async def search_authorities(
         self,
         topic: str,
         vocabularies: List[str] = None,
         limit_per_vocab: int = 5,
-        min_score: float = 0.7
+        min_score: float = 0.7,
+        east_asian_boost: bool = True
     ) -> List[AuthorityCandidate]:
         """
         Search for authority matches across multiple vocabularies.
@@ -280,6 +326,7 @@ class AuthorityVectorSearch:
             vocabularies: List of vocabulary codes to search (default: ["lcsh", "fast"])
             limit_per_vocab: Maximum results per vocabulary
             min_score: Minimum certainty threshold
+            east_asian_boost: Apply boosting for East Asian-related subjects
             
         Returns:
             List of AuthorityCandidate objects
@@ -313,18 +360,24 @@ class AuthorityVectorSearch:
                     # Parse results
                     for obj in response.objects:
                         if obj.metadata.certainty and obj.metadata.certainty >= min_score:
-                            all_candidates.append(AuthorityCandidate(
+                            candidate = AuthorityCandidate(
                                 label=obj.properties.get("label", ""),
                                 uri=obj.properties.get("uri", ""),
                                 vocabulary=obj.properties.get("vocabulary", vocab),
                                 score=obj.metadata.certainty
-                            ))
+                            )
+                            
+                            # Apply East Asian boosting
+                            if east_asian_boost:
+                                candidate.score = self._boost_east_asian_score(candidate, topic)
+                            
+                            all_candidates.append(candidate)
                 
                 except Exception as e:
                     print(f"Warning: Failed to search {vocab}: {str(e)}")
                     continue
             
-            # Sort by score descending
+            # Sort by score descending (boosted scores will rank higher)
             all_candidates.sort(key=lambda x: x.score, reverse=True)
             
             return all_candidates
