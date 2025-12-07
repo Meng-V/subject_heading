@@ -78,6 +78,17 @@ Return ONLY valid JSON in this format:
             
             content = response.output_text
             
+            # Check for incomplete response
+            if response.status == "incomplete" or not content:
+                print(f"[OCR] Warning: Incomplete response, status={response.status}")
+                return PageImage(
+                    page_hint=page_hint,
+                    page_type="other",
+                    text="[OCR incomplete - please retry or enter manually]"
+                )
+            
+            print(f"[OCR] Raw response: {content[:200]}...")
+            
             # Extract JSON
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
@@ -86,13 +97,23 @@ Return ONLY valid JSON in this format:
             
             page_data = json.loads(content)
             
+            print(f"[OCR] Extracted page_type={page_data.get('page_type')}, text_len={len(page_data.get('text', ''))}")
+            
             return PageImage(
                 page_hint=page_hint,
                 page_type=page_data.get("page_type", "other"),
                 text=page_data.get("text", "")
             )
             
+        except json.JSONDecodeError as e:
+            print(f"[OCR] JSON parse error: {e}, content was: {content[:500] if content else 'empty'}")
+            return PageImage(
+                page_hint=page_hint,
+                page_type="other",
+                text=content if content else f"Error: JSON parse failed"
+            )
         except Exception as e:
+            print(f"[OCR] Exception: {type(e).__name__}: {str(e)}")
             return PageImage(
                 page_hint=page_hint,
                 page_type="other",
@@ -123,9 +144,15 @@ Return ONLY valid JSON in this format:
         toc_text = "\n\n".join([p.text for p in toc_pages])
         preface_text = "\n\n".join([p.text for p in preface_pages])
         
-        # Aggregate with LLM
-        aggregation_prompt = f"""You are a library metadata extractor. 
-Aggregate the following book page texts into a single structured metadata object.
+        # Also include text from other page types
+        other_pages = [p for p in pages if p.page_type == "other"]
+        other_text = "\n\n".join([p.text for p in other_pages])
+        
+        # Aggregate with LLM - comprehensive extraction
+        aggregation_prompt = f"""You are an expert library cataloger and metadata extractor specializing in EAST ASIAN materials.
+Carefully analyze ALL the following book page texts and extract COMPREHENSIVE metadata.
+
+IMPORTANT: Extract as much information as possible. These are images of book covers, title pages, copyright pages, tables of contents, and other informational pages. Look for ALL of the following:
 
 FRONT COVER TEXT:
 {front_text}
@@ -139,23 +166,43 @@ FLAP TEXT:
 TABLE OF CONTENTS:
 {toc_text}
 
-PREFACE:
+PREFACE/INTRODUCTION:
 {preface_text}
 
-Extract and return ONLY valid JSON in this format:
+OTHER PAGES (may include title page, copyright page, etc.):
+{other_text}
+
+Extract and return ONLY valid JSON with ALL available information:
 {{
-  "title": "main book title",
-  "author": "author name(s)",
+  "title": "main book title (include subtitle after colon if present)",
+  "author": "author name(s), separated by semicolons if multiple",
   "publisher": "publisher name",
-  "pub_place": "publication place",
-  "pub_year": "publication year",
-  "summary": "summary from back cover/flap",
-  "table_of_contents": ["chapter 1", "chapter 2", ...],
-  "preface_snippets": ["preface paragraph 1", "preface paragraph 2", ...]
+  "pub_place": "publication place (city, country)",
+  "pub_year": "publication year (4-digit year)",
+  "edition": "edition statement if any (e.g., '2nd edition', 'revised edition')",
+  "language": "primary language of the book (e.g., Chinese, Japanese, Korean, English)",
+  "isbn": "ISBN-10 or ISBN-13 if visible",
+  "series": "series title if the book is part of a series",
+  "summary": "comprehensive summary combining back cover, flap text, and any description. Include key themes, topics, and scope of the book.",
+  "subjects_hint": "list of potential subject terms you can identify from the content (these will help with cataloging)",
+  "table_of_contents": ["chapter/section 1 title", "chapter/section 2 title", ...],
+  "preface_snippets": ["key excerpts from preface that describe the book's purpose or scope"],
+  "notes": "any other relevant information (translator, illustrator, awards, etc.)"
 }}
 
-If any field is not found, use empty string "" for text fields or empty array [] for lists."""
+EXTRACTION GUIDELINES:
+- For CJK (Chinese/Japanese/Korean) texts, include both original script and romanization if visible
+- Look for copyright page information: publisher, year, ISBN, edition
+- Extract chapter titles from table of contents
+- Identify the book's subject matter from all available text
+- If information appears in multiple places, use the most complete version
+- If a field is not found, use empty string "" for text or empty array [] for lists."""
 
+        # Log what we're sending
+        all_text = front_text + back_text + flap_text + toc_text + preface_text + other_text
+        print(f"[OCR Aggregate] Total extracted text length: {len(all_text)} chars")
+        print(f"[OCR Aggregate] Page types: {[p.page_type for p in pages]}")
+        
         try:
             # Use Responses API
             response = self.client.responses.create(
@@ -171,10 +218,11 @@ If any field is not found, use empty string "" for text fields or empty array []
             )
             
             content = response.output_text
+            print(f"[OCR Aggregate] Response status: {response.status}, content length: {len(content) if content else 0}")
             
             # Check for incomplete response
             if not content or response.status == "incomplete":
-                raise ValueError("API response incomplete - increase max_output_tokens")
+                raise ValueError(f"API response incomplete - status={response.status}")
             
             # Extract JSON
             if "```json" in content:
@@ -183,6 +231,7 @@ If any field is not found, use empty string "" for text fields or empty array []
                 content = content.split("```")[1].split("```")[0].strip()
             
             metadata_dict = json.loads(content)
+            print(f"[OCR Aggregate] Extracted metadata: title='{metadata_dict.get('title', '')[:50]}', author='{metadata_dict.get('author', '')}'")
             
             # Create BookMetadata with raw_pages
             metadata = BookMetadata(
@@ -193,16 +242,36 @@ If any field is not found, use empty string "" for text fields or empty array []
             return metadata
             
         except Exception as e:
-            # Fallback: basic extraction
+            print(f"[OCR Aggregate] ERROR: {type(e).__name__}: {str(e)}")
+            # Fallback: try to extract from raw text
+            all_texts = [p.text for p in pages if p.text and not p.text.startswith("Error")]
+            combined = "\n".join(all_texts)
+            
+            # Try to parse partial JSON if available
+            title_fallback = ""
+            author_fallback = ""
+            if 'content' in dir() and content:
+                try:
+                    import re
+                    title_match = re.search(r'"title"\s*:\s*"([^"]+)"', content)
+                    author_match = re.search(r'"author"\s*:\s*"([^"]+)"', content)
+                    if title_match:
+                        title_fallback = title_match.group(1)
+                    if author_match:
+                        author_fallback = author_match.group(1)
+                except:
+                    pass
+            
             return BookMetadata(
-                title="",
-                author="",
+                title=title_fallback or "Please enter title",
+                author=author_fallback,
                 publisher="",
                 pub_place="",
                 pub_year="",
-                summary=back_text[:500] if back_text else "",
+                summary=combined[:1000] if combined else "",
                 table_of_contents=[],
                 preface_snippets=[],
+                notes="Image was processed but some fields could not be extracted. Please review and complete the information above.",
                 raw_pages=pages
             )
     

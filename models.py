@@ -2,7 +2,7 @@
 from typing import List, Optional, Literal
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 # =============================================================================
@@ -39,16 +39,34 @@ class PageImage(BaseModel):
 
 
 class BookMetadata(BaseModel):
-    """Extracted book metadata from OCR."""
-    title: str = Field(..., description="Book title")
-    author: str = Field(default="", description="Author name(s)")
+    """Extracted book metadata from OCR - comprehensive for East Asian cataloging."""
+    title: str = Field(..., description="Book title (including subtitle)")
+    author: str = Field(default="", description="Author name(s), semicolon-separated")
     publisher: str = Field(default="", description="Publisher name")
-    pub_place: str = Field(default="", description="Publication place")
-    pub_year: str = Field(default="", description="Publication year")
-    summary: str = Field(default="", description="Summary text from back cover/flap")
+    pub_place: str = Field(default="", description="Publication place (city, country)")
+    pub_year: str = Field(default="", description="Publication year (4-digit)")
+    edition: str = Field(default="", description="Edition statement")
+    language: str = Field(default="", description="Primary language (Chinese, Japanese, Korean, English, etc.)")
+    isbn: str = Field(default="", description="ISBN-10 or ISBN-13")
+    series: str = Field(default="", description="Series title if part of a series")
+    summary: str = Field(default="", description="Comprehensive summary from back cover/flap/description")
+    subjects_hint: str = Field(default="", description="Potential subject terms identified from content")
     table_of_contents: List[str] = Field(default_factory=list, description="Table of contents entries")
-    preface_snippets: List[str] = Field(default_factory=list, description="Preface text snippets")
+    preface_snippets: List[str] = Field(default_factory=list, description="Key excerpts from preface")
+    notes: str = Field(default="", description="Additional information (translator, illustrator, awards, etc.)")
     raw_pages: List[PageImage] = Field(default_factory=list, description="Raw page classifications and text")
+    
+    @model_validator(mode='before')
+    @classmethod
+    def convert_list_fields_to_strings(cls, data):
+        """Convert any list fields that should be strings (OCR sometimes returns lists)."""
+        if isinstance(data, dict):
+            # Fields that should be strings but OCR might return as lists
+            string_fields = ['subjects_hint', 'summary', 'notes', 'author', 'title', 'publisher', 'pub_place', 'edition', 'language', 'isbn', 'series']
+            for field in string_fields:
+                if field in data and isinstance(data[field], list):
+                    data[field] = "; ".join(str(item) for item in data[field])
+        return data
 
 
 class TopicCandidate(BaseModel):

@@ -21,7 +21,7 @@ class TopicGenerator:
         self.max_topics = settings.max_topics
     
     def _format_metadata_for_prompt(self, metadata: BookMetadata) -> str:
-        """Format book metadata into a text prompt."""
+        """Format book metadata into a comprehensive text prompt."""
         parts = []
         
         if metadata.title:
@@ -30,13 +30,25 @@ class TopicGenerator:
             parts.append(f"Author: {metadata.author}")
         if metadata.publisher:
             parts.append(f"Publisher: {metadata.publisher}")
+        if metadata.pub_place:
+            parts.append(f"Publication Place: {metadata.pub_place}")
         if metadata.pub_year:
             parts.append(f"Publication Year: {metadata.pub_year}")
+        if hasattr(metadata, 'language') and metadata.language:
+            parts.append(f"Language: {metadata.language}")
+        if hasattr(metadata, 'edition') and metadata.edition:
+            parts.append(f"Edition: {metadata.edition}")
+        if hasattr(metadata, 'series') and metadata.series:
+            parts.append(f"Series: {metadata.series}")
         if metadata.summary:
-            parts.append(f"\nSummary:\n{metadata.summary}")
+            parts.append(f"\nSummary/Description:\n{metadata.summary}")
+        if hasattr(metadata, 'subjects_hint') and metadata.subjects_hint:
+            parts.append(f"\nSubject Hints (from OCR): {metadata.subjects_hint}")
         if metadata.table_of_contents:
-            toc_text = "\n".join([f"- {item}" for item in metadata.table_of_contents])
+            toc_text = "\n".join([f"- {item}" for item in metadata.table_of_contents[:20]])  # Limit to 20 items
             parts.append(f"\nTable of Contents:\n{toc_text}")
+        if hasattr(metadata, 'notes') and metadata.notes:
+            parts.append(f"\nAdditional Notes: {metadata.notes}")
         
         return "\n".join(parts)
     
